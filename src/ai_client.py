@@ -10,37 +10,46 @@ from openai import OpenAI
 from .config import AppConfig
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_FILTER_PROMPT_FILE = Path("prompt_example.txt")
+DEFAULT_HN_FILTER_PROMPT_FILE = Path("prompt_example.txt")
+DEFAULT_ARXIV_FILTER_PROMPT_FILE = Path("arxiv_prompt.txt")
 
 # OpenAI client must be configured by main.
 client: Optional[OpenAI] = None
-_prompt_path: Optional[Path] = None
+_hn_prompt_path: Optional[Path] = None
+_arxiv_prompt_path: Optional[Path] = None
 
 
 def configure(cfg: AppConfig) -> None:
-    """Configure the OpenAI client and optional prompt path from AppConfig."""
-    global client, _prompt_path
+    """Configure the OpenAI client and source-specific prompt paths from AppConfig."""
+    global client, _hn_prompt_path, _arxiv_prompt_path
     client = OpenAI(api_key=cfg.openai_api_key)
 
-    prompt_path = cfg.prompt_path or str(DEFAULT_FILTER_PROMPT_FILE)
-    candidate = Path(prompt_path)
+    hn_prompt = cfg.hn_prompt_path or str(DEFAULT_HN_FILTER_PROMPT_FILE)
+    arxiv_prompt = cfg.arxiv_prompt_path or str(DEFAULT_ARXIV_FILTER_PROMPT_FILE)
+    _hn_prompt_path = _resolve_prompt_path(hn_prompt)
+    _arxiv_prompt_path = _resolve_prompt_path(arxiv_prompt)
+
+
+def _resolve_prompt_path(path: Union[Path, str]) -> Path:
+    """Resolve a prompt path relative to the repository root when needed."""
+    candidate = Path(path) if not isinstance(path, Path) else path
     if candidate.is_absolute():
-        _prompt_path = candidate
-    else:
-        # Resolve relative prompt paths from the repository root.
-        _prompt_path = (BASE_DIR.parent / candidate).resolve()
+        return candidate
+    return (BASE_DIR.parent / candidate).resolve()
 
 
 def _load_prompt_from_file(path: Union[Path, str]) -> str:
     """Load the first readable prompt template from known locations."""
     candidates: list[Path] = []
 
-    if _prompt_path is not None:
-        candidates.append(_prompt_path)
+    candidates.append(_resolve_prompt_path(path))
+    if _hn_prompt_path is not None:
+        candidates.append(_hn_prompt_path)
+    if _arxiv_prompt_path is not None:
+        candidates.append(_arxiv_prompt_path)
 
-    provided = Path(path) if not isinstance(path, Path) else path
-    candidates.append(provided)
-    candidates.append(BASE_DIR.parent / DEFAULT_FILTER_PROMPT_FILE)
+    candidates.append(BASE_DIR.parent / DEFAULT_HN_FILTER_PROMPT_FILE)
+    candidates.append(BASE_DIR.parent / DEFAULT_ARXIV_FILTER_PROMPT_FILE)
 
     for candidate in candidates:
         try:
@@ -53,7 +62,11 @@ def _load_prompt_from_file(path: Union[Path, str]) -> str:
 
 
 def analyze_story(
-    title: str, url: str, text: str = "", prompt_template: Optional[str] = None
+    title: str,
+    url: str,
+    text: str = "",
+    prompt_template: Optional[str] = None,
+    source: str = "hn",
 ) -> Tuple[bool, str, str, str]:
     """Return (interesting, accept_reason, reject_reason, summary).
 
@@ -63,7 +76,15 @@ def analyze_story(
       - reject_reason: explanation when interesting is False, else empty string
       - summary: a concise two-sentence summary of the story
     """
-    template = prompt_template or _load_prompt_from_file(DEFAULT_FILTER_PROMPT_FILE)
+    if prompt_template:
+        template = prompt_template
+    else:
+        default_path = (
+            DEFAULT_ARXIV_FILTER_PROMPT_FILE
+            if source.lower() == "arxiv"
+            else DEFAULT_HN_FILTER_PROMPT_FILE
+        )
+        template = _load_prompt_from_file(default_path)
     # Ensure the model always has something to evaluate. If the item has no
     # `text` field (HN often omits it), fall back to using the title as the
     # content so the filter can still make a judgment.

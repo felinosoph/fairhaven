@@ -21,7 +21,8 @@ def send_embed(
     title: str,
     url: str,
     score: int,
-    story_id: int,
+    story_id: Any,
+    source: str = "Hacker News",
     accept_reason: Optional[str] = None,
     summary: Optional[str] = None,
 ) -> None:
@@ -32,7 +33,7 @@ def send_embed(
         "title": title,
         "url": url,
         "color": 3066993,
-        "footer": {"text": f"HN ID: {story_id} • Score: {score}"},
+        "footer": {"text": f"Source: {source} • ID: {story_id} • Score: {score}"},
         "author": {"name": "Felinobot"},
     }
     description_parts: list[str] = []

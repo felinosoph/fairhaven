@@ -20,6 +20,8 @@ class AppConfig:
     upstash_url: str
     upstash_token: str
     openai_api_key: str
+    hn_prompt_path: Optional[str] = None
+    arxiv_prompt_path: Optional[str] = None
     prompt_path: Optional[str] = None
 
 
@@ -88,10 +90,11 @@ def build_config() -> AppConfig:
     upstash_url = read_env_str("UPSTASH_REDIS_URL")
     upstash_token = read_env_str("UPSTASH_REDIS_TOKEN")
     openai_key = read_env_str("OPENAI_API_KEY")
-    # Optional path to a prompt template file. If not set, defaults to
-    # prompt_example.txt in the repo root or src/prompts/.
-    prompt_path = read_env_str(
-        "FILTER_PROMPT_FILE", default="prompt_example.txt", required=False
+    hn_prompt_path = read_env_str(
+        "HN_FILTER_PROMPT_FILE", default="prompt_example.txt", required=False
+    )
+    arxiv_prompt_path = read_env_str(
+        "ARXIV_FILTER_PROMPT_FILE", default="arxiv_prompt.txt", required=False
     )
     return AppConfig(
         discord_webhook_url=discord_webhook,
@@ -99,5 +102,7 @@ def build_config() -> AppConfig:
         upstash_url=upstash_url,
         upstash_token=upstash_token,
         openai_api_key=openai_key,
-        prompt_path=prompt_path,
+        hn_prompt_path=hn_prompt_path,
+        arxiv_prompt_path=arxiv_prompt_path,
+        prompt_path=hn_prompt_path,
     )
