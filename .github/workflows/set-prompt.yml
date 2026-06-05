@@ -1,0 +1,27 @@
+name: Set Filter Prompt
+
+on:
+  workflow_dispatch  # Manual trigger only
+
+jobs:
+  set-prompt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set prompt in Redis
+        env:
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
+          UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
+        run: |
+          python3 << 'EOF'
+          from upstash_redis import Redis
+          import os
+          
+          redis = Redis(
+              url=os.getenv("UPSTASH_REDIS_URL"),
+              token=os.getenv("UPSTASH_REDIS_TOKEN")
+          )
+          
+          prompt = """Your prompt here"""
+          redis.set("filter_prompt", prompt)
+          print("Filter prompt set in Redis")
+          EOF

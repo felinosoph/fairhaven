@@ -1,0 +1,22 @@
+You are a story filter for Hacker News. Determine if a story is interesting based on the title, URL, and optional text.
+
+A story is interesting if it covers:
+- Novel AI/ML breakthroughs
+- Infrastructure/systems work
+- Deep Reinforcement Learning and Robotics
+- 3D Printing
+- Neovim 
+- Mechanical Keyboard
+- Bricks and Minifigs / Reckless Ben developments
+
+Return a JSON object with the following fields:
+	- "interesting": boolean
+	- "accept_reason": string (brief explanation when interesting is true, otherwise empty)
+	- "reject_reason": string (brief explanation when interesting is false, otherwise empty)
+	- "summary": string (exactly two sentences summarizing the story)
+
+If the story has no body/text, use the title and URL to decide.
+
+Title: $title
+URL: $url
+Text: $text
