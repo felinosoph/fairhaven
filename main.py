@@ -35,37 +35,26 @@ def check_hacker_news() -> None:
         url = story.get("url", f"https://news.ycombinator.com/item?id={story_id}")
         text = story.get("text", "")
 
-        is_match, accept_reason, reject_reason, summary = ai_client.analyze_story(
-            title, url, text, source="hn"
-        )
+        is_match, summary = ai_client.analyze_story(title, url, text, source="hn")
 
         if is_match:
-            print(f"Found match: {title} — reason: {accept_reason}")
+            print(f"Found match: {title}")
             discord_comm.send_embed(
                 title=title,
                 url=url,
                 score=story.get("score", 0),
                 story_id=story_id,
                 source="Hacker News",
-                accept_reason=accept_reason,
+                accept_reason="",
                 summary=summary,
             )
-        else:
-            # Log why the story was rejected for debugging and tuning
-            if reject_reason:
-                if summary:
-                    print(
-                        f"Rejected: {title} — reason: {reject_reason} — summary: {summary}"
-                    )
-                else:
-                    print(f"Rejected: {title} — reason: {reject_reason}")
 
 
 def check_arxiv_ai_papers() -> None:
     """Check recent ArXiv AI papers and post worthwhile ones to Discord."""
     print(f"[{datetime.datetime.now()}] Fetching ArXiv papers...")
 
-    papers = sources.fetch_arxiv_ai_papers(max_results=10)
+    papers = sources.fetch_arxiv_ai_papers(max_results=100)
     if not papers:
         return
 
@@ -91,7 +80,7 @@ def check_arxiv_ai_papers() -> None:
             paper_context.append(f"Authors: {', '.join(authors)}")
         if category:
             paper_context.append(f"Category: {category}")
-        is_match, accept_reason, reject_reason, summary = ai_client.analyze_story(
+        is_match, summary = ai_client.analyze_story(
             title,
             url,
             "\n\n".join(paper_context),
@@ -99,24 +88,16 @@ def check_arxiv_ai_papers() -> None:
         )
 
         if is_match:
-            print(f"Found arXiv match: {title} — reason: {accept_reason}")
+            print(f"Found arXiv match: {title}")
             discord_comm.send_embed(
                 title=title,
                 url=url,
                 score=0,
                 story_id=paper_id,
                 source="ArXiv",
-                accept_reason=accept_reason,
+                accept_reason="",
                 summary=summary,
             )
-        else:
-            if reject_reason:
-                if summary:
-                    print(
-                        f"Rejected arXiv: {title} — reason: {reject_reason} — summary: {summary}"
-                    )
-                else:
-                    print(f"Rejected arXiv: {title} — reason: {reject_reason}")
 
 
 def main():

@@ -67,14 +67,12 @@ def analyze_story(
     text: str = "",
     prompt_template: Optional[str] = None,
     source: str = "hn",
-) -> Tuple[bool, str, str, str]:
-    """Return (interesting, accept_reason, reject_reason, summary).
+) -> Tuple[bool, str]:
+    """Return (interesting, summary).
 
-    The function returns a 4-tuple:
+    The function returns a 2-tuple:
       - interesting: True when the story matches the filter
-      - accept_reason: explanation when interesting is True, else empty string
-      - reject_reason: explanation when interesting is False, else empty string
-      - summary: a concise two-sentence summary of the story
+      - summary: a concise two-sentence summary if accepted, else empty string
     """
     if prompt_template:
         template = prompt_template
@@ -104,7 +102,7 @@ def analyze_story(
         system_msg = (
             "Evaluate the provided content and return a JSON object only. "
             "The object must follow this schema: "
-            '{"interesting": true|false, "accept_reason": "why accept", "reject_reason": "why reject", "summary": "two-sentence summary"}.'
+            '{"interesting": true|false, "summary": "two-sentence summary if interesting, else empty string"}.'
             " If the item has no body/text, use the title and url to decide."
         )
         response = client.chat.completions.create(
@@ -122,18 +120,12 @@ def analyze_story(
         except Exception:
             content = None
         if not content:
-            return False, "", "", ""
+            return False, ""
         data = json.loads(content)
         interesting = bool(data.get("interesting", False))
-        accept_reason = data.get("accept_reason") or data.get("reason") or ""
-        reject_reason = data.get("reject_reason") or (
-            "" if interesting else (data.get("reason") or "")
-        )
-        summary = data.get("summary") or ""
-        if interesting:
-            return True, str(accept_reason), "", str(summary)
-        return False, "", str(reject_reason), str(summary)
+        summary = data.get("summary") or "" if interesting else ""
+        return interesting, str(summary)
     except Exception as e:
         # Surface the raw error for debugging and return a safe fallback.
         print(f"OpenAI filtering error: {e}")
-        return False, "", "", ""
+        return False, ""
