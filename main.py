@@ -104,7 +104,7 @@ def main():
     """Entry point: run Hacker News and ArXiv checks."""
 
     check_hacker_news()
-    check_arxiv_ai_papers()
+    #check_arxiv_ai_papers()
 
 
 if __name__ == "__main__":
